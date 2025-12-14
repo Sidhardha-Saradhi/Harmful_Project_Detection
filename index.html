@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Camera Feed</title>
+</head>
+<body>
+    <h1>Live Camera Feed</h1>
+    <label for="cameraSelect">Select Camera:</label>
+    <select id="cameraSelect"></select>
+    <video id="video" autoplay playsinline style="width: 80%; max-width: 600px;"></video>
+
+    <script>
+        const video = document.getElementById('video');
+        const cameraSelect = document.getElementById('cameraSelect');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        let lastDetected = ""; // Store the last detected object to avoid repetition
+        let currentStream = null; // To store the active camera stream
+
+        // Function to get available cameras and populate dropdown
+        function getCameras() {
+            navigator.mediaDevices.enumerateDevices()
+                .then(devices => {
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    cameraSelect.innerHTML = ''; // Clear existing options
+                    videoDevices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.text = device.label || `Camera ${index + 1}`;
+                        cameraSelect.appendChild(option);
+                    });
+
+                    // Auto-select the first camera
+                    if (videoDevices.length > 0) {
+                        startCamera(videoDevices[0].deviceId);
+                    }
+                })
+                .catch(error => console.error('Error getting cameras:', error));
+        }
+
+        // Function to stop the current camera stream before switching
+        function stopCurrentStream() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        // Function to start camera with selected device
+        function startCamera(deviceId) {
+            stopCurrentStream(); // Stop previous stream
+
+            const constraints = {
+                video: {
+                    deviceId: deviceId ? { exact: deviceId } : undefined,
+                    facingMode: "environment", // Ensure back camera works properly
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    currentStream = stream;
+                    video.srcObject = stream;
+                })
+                .catch(error => console.error("Error accessing the camera: ", error));
+        }
+
+        // Listen for camera selection changes
+        cameraSelect.addEventListener('change', () => {
+            startCamera(cameraSelect.value);
+        });
+
+        // Function to announce detected objects
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0; // Adjust speed (1.0 is normal)
+            utterance.pitch = 1.0;
+            speechSynthesis.speak(utterance);
+        }
+
+        // Function to send frame to server
+        const sendFrameToServer = () => {
+            if (!video.videoWidth) return; // Ensure video is playing
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert frame to Base64
+            const frame = canvas.toDataURL('image/jpeg');
+
+            // Send frame to the server
+            fetch('/process_frame/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ frame: frame }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.detected.length > 0) {
+                    const detectedObjects = data.detected.join(", ");
+
+                    // Speak detected objects only if they are different from the last detected
+                    if (detectedObjects !== lastDetected) {
+                        speak(`Warning! ${detectedObjects} detected`);
+                        lastDetected = detectedObjects;
+                    }
+                } else {
+                    lastDetected = ""; // Reset if nothing detected
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        };
+
+        // Initialize camera selection and start the first camera
+        getCameras();
+
+        // Send frames every 500ms
+        setInterval(sendFrameToServer, 500);
+    </script>
+</body>
+</html>
