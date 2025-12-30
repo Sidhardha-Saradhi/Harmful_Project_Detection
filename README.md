@@ -8,11 +8,11 @@ This project demonstrates a practical implementation of AI-assisted object detec
 
 -- **Key Features**
 
-✔ Real-time harmful object detection logic implemented in Python
-✔ Django web framework for backend handling and UI rendering
-✔ Uses data libraries like NumPy and Pandas for efficient processing
-✔ Designed to assist visually impaired users by detecting objects that could be dangerous
-✔ Modular and extendable for future improvement with machine learning models
+-- Real-time harmful object detection logic implemented in Python
+-- Django web framework for backend handling and UI rendering
+-- Uses data libraries like NumPy and Pandas for efficient processing
+-- Designed to assist visually impaired users by detecting objects that could be dangerous
+-- Modular and extendable for future improvement with machine learning models
 
 -- **Technologies Used**
 
