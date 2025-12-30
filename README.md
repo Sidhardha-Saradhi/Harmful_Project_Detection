@@ -73,10 +73,27 @@ pip install -r requirements.txt
 
 cd Harmful_Project_Detection
 
-
 Run the Django server
 
 python manage.py runserver
+
+
+## Demo / Project Execution
+
+This project is currently demonstrated via source code and sample outputs.
+
+### How to Run
+1. Clone the repository
+2. Install dependencies
+3. Run the backend detection function with an image input
+
+### Sample Output
+Input: Image containing a harmful object  
+Output: "Harmful object detected!"
+
+### Note
+Due to hardware and deployment limitations, this project is presented as a code-based demo.
+
 
 
 Open the browser and go to:
